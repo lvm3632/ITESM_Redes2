@@ -1,0 +1,663 @@
+RT1-GDL#show run
+Building configuration...
+
+
+Current configuration : 6067 bytes
+!
+! Last configuration change at 23:07:47 mex Sat May 23 2020
+version 15.1
+service timestamps debug datetime localtime
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname RT1-GDL
+!
+boot-start-marker
+boot-end-marker
+!
+!
+logging buffered 4096
+!
+no aaa new-model
+clock timezone mex -6 0
+clock summer-time mex recurring
+!
+no ipv6 cef
+ip source-route
+ip cef
+!
+!
+!
+ip dhcp excluded-address 172.21.0.1 172.21.0.10
+ip dhcp excluded-address 172.21.16.1 172.21.16.10
+ip dhcp excluded-address 172.21.20.1 172.21.20.10
+ip dhcp excluded-address 172.21.22.1 172.21.22.10
+ip dhcp excluded-address 172.21.23.1 172.21.23.10
+!
+ip dhcp pool VLAN2_Wireless_GDL
+ network 172.21.0.0 255.255.240.0
+ default-router 172.21.0.1
+ dns-server 8.8.8.8
+ lease 0 3
+!
+ip dhcp pool VLAN3_Wireless_Invitados_GDL
+ network 172.21.16.0 255.255.252.0
+ default-router 172.21.16.1
+ dns-server 8.8.8.8
+ lease 0 3
+!
+ip dhcp pool VLAN4_IOT_Equipos_Administracion_GDL
+ network 172.21.20.0 255.255.254.0
+ default-router 172.21.20.1
+ dns-server 8.8.8.8
+!
+ip dhcp pool VLAN5_Video_Vigilancia_GDL
+ network 172.21.22.0 255.255.255.0
+ default-router 172.21.22.1
+ dns-server 8.8.8.8
+!
+ip dhcp pool VLAN6_Iptel_GDL
+ network 172.21.23.0 255.255.255.128
+ default-router 172.21.23.1
+ dns-server 8.8.8.8
+!
+!
+no ip domain lookup
+ip domain name OficinasGDLRT1.com
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+crypto pki token default removal timeout 0
+!
+!
+voice-card 0
+!
+!
+!
+!
+!
+!
+!
+license udi pid CISCO2901/K9 sn FTX161385K3
+license boot module c2900 technology-package uck9
+!
+!
+object-group network VLANs-PERMIT
+ 172.21.0.0 255.255.240.0
+ 172.21.16.0 255.255.252.0
+ 172.21.0.0 255.255.192.0
+!
+username cisco privilege 15 secret 5 $1$E9xn$Fbgj2oU6A3iZJGbJXoUDg1
+username cisco1 secret 5 $1$kjjk$1QXpiAndvBr0/Wbvn1uB2.
+!
+redundancy
+!
+!
+ip ssh version 2
+!
+!
+!
+!
+interface Loopback0
+ description Loopback_GDL
+ ip address 172.21.63.250 255.255.255.255
+!
+interface Loopback1
+ ip address 172.21.63.251 255.255.255.255
+!
+interface Embedded-Service-Engine0/0
+ no ip address
+ shutdown
+!
+interface GigabitEthernet0/0
+ description TRUNK(RT1GDL)
+ no ip address
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/0.2
+ description VLAN2_Wireless(GDL)
+ encapsulation dot1Q 2
+ ip address 172.21.0.1 255.255.240.0
+ ip helper-address 10.40.72.60
+ ip nat inside
+ ip virtual-reassembly in
+!
+interface GigabitEthernet0/0.3
+ description VLAN3_Wireless_Invitados(GDL)
+ encapsulation dot1Q 3
+ ip address 172.21.16.1 255.255.252.0
+ ip helper-address 10.40.72.60
+ ip nat inside
+ ip virtual-reassembly in
+!
+interface GigabitEthernet0/0.4
+ description VLAN4_IOT_Equipos_Administracion(GDL)
+ encapsulation dot1Q 4
+ ip address 172.21.20.1 255.255.254.0
+ ip helper-address 10.40.72.60
+!
+interface GigabitEthernet0/0.5
+ description VLAN5_Video_Vigilancia(GDL)
+ encapsulation dot1Q 5
+ ip address 172.21.22.1 255.255.255.0
+ ip helper-address 10.40.72.60
+!
+interface GigabitEthernet0/0.6
+ description VLAN6_Iptel(GDL)
+ encapsulation dot1Q 6
+ ip address 172.21.23.1 255.255.255.128
+ ip helper-address 10.40.72.60
+!
+interface GigabitEthernet0/0.20
+ encapsulation dot1Q 20
+ ip address 172.21.62.254 255.255.255.0
+!
+interface GigabitEthernet0/1
+ description al ISP(GDL)
+ ip address dhcp
+ ip access-group ACL_GDL out
+ ip nat outside
+ ip virtual-reassembly in
+ duplex auto
+ speed auto
+!
+interface Serial0/0/0
+ description R1(SERIAL_DERECHO_ARRIBA-WAN2)
+ ip address 192.168.0.5 255.255.255.252
+ clock rate 2000000
+!
+interface Serial0/0/1
+ description R1(SERIAL_IZQUIERDO_ARRIBA-WAN1)
+ ip address 192.168.0.1 255.255.255.252
+ clock rate 2000000
+!
+!
+router eigrp 1
+ network 172.21.0.0 0.0.63.255
+ network 192.168.0.0 0.0.0.3
+ network 192.168.0.4 0.0.0.3
+ passive-interface default
+ no passive-interface Serial0/0/0
+ no passive-interface Serial0/0/1
+!
+router ospf 1
+ passive-interface default
+ no passive-interface Serial0/0/0
+ no passive-interface Serial0/0/1
+ network 172.21.0.0 0.0.63.255 area 0
+ network 192.168.0.0 0.0.0.3 area 0
+ network 192.168.0.4 0.0.0.3 area 0
+!
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+!
+ip nat inside source list 1 interface GigabitEthernet0/1 overload
+ip route 0.0.0.0 0.0.0.0 GigabitEthernet0/1
+ip route 0.0.0.0 0.0.0.0 10.40.72.254 254
+ip route 0.0.0.0 0.0.0.0 10.40.72.254 254
+!
+ip access-list extended ACL_GDL
+ permit tcp object-group VLANs-PERMIT any eq www
+ permit tcp object-group VLANs-PERMIT any eq 22
+ permit tcp object-group VLANs-PERMIT any eq domain
+ permit tcp object-group VLANs-PERMIT any range ftp-data ftp
+ permit ip any any
+ deny   tcp object-group VLANs-PERMIT any eq www time-range 03:00-07:00
+ deny   tcp object-group VLANs-PERMIT any eq 8080 time-range 03:00-07:00
+ deny   tcp object-group VLANs-PERMIT any eq 52 time-range 03:00-07:00
+ deny   tcp object-group VLANs-PERMIT any range ftp-data ftp time-range 03:00-07:00
+!
+logging 10.40.72.60
+logging 10.40.72.64
+access-list 1 remark ACL para NAT
+
+RT1-GDL#show status interfaces
+                ^
+% Invalid input detected at '^' marker.
+
+RT1-GDL#show interfaces
+Embedded-Service-Engine0/0 is administratively down, line protocol is down
+  Hardware is Embedded Service Engine, address is 0000.0000.0000 (bia 0000.0000.0000)
+  MTU 1500 bytes, BW 10000 Kbit/sec, DLY 1000 usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation ARPA, loopback not set
+  Keepalive set (10 sec)
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Last input never, output never, output hang never
+  Last clearing of "show interface" counters never
+  Input queue: 0/64/0/0 (size/max/drops/flushes); Total output drops: 0
+  Queueing strategy: fifo
+  Output queue: 0/40 (size/max)
+  5 minute input rate 0 bits/sec, 0 packets/sec
+  5 minute output rate 0 bits/sec, 0 packets/sec
+     0 packets input, 0 bytes, 0 no buffer
+     Received 0 broadcasts (0 IP multicasts)
+     0 runts, 0 giants, 0 throttles
+     0 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored
+     0 input packets with dribble condition detected
+     0 packets output, 0 bytes, 0 underruns
+     0 output errors, 0 collisions, 0 interface resets
+     0 unknown protocol drops
+     0 babbles, 0 late collision, 0 deferred
+     0 lost carrier, 0 no carrier
+     0 output buffer failures, 0 output buffers swapped out
+GigabitEthernet0/0 is up, line protocol is up
+  Hardware is CN Gigabit Ethernet, address is 5057.a8bf.df08 (bia 5057.a8bf.df08)
+  Description: TRUNK(RT1GDL)
+  MTU 1500 bytes, BW 100000 Kbit/sec, DLY 100 usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation 802.1Q Virtual LAN, Vlan ID  1., loopback not set
+  Keepalive set (10 sec)
+  Full Duplex, 100Mbps, media type is RJ45
+  output flow-control is unsupported, input flow-control is unsupported
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Last input 00:00:26, output 00:00:03, output hang never
+  Last clearing of "show interface" counters never
+  Input queue: 0/75/0/0 (size/max/drops/flushes); Total output drops: 0
+  Queueing strategy: fifo
+  Output queue: 0/40 (size/max)
+  5 minute input rate 0 bits/sec, 0 packets/sec
+  5 minute output rate 0 bits/sec, 0 packets/sec
+     1398 packets input, 224104 bytes, 0 no buffer
+     Received 906 broadcasts (0 IP multicasts)
+     0 runts, 0 giants, 0 throttles
+     0 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored
+     0 watchdog, 863 multicast, 0 pause input
+     5843 packets output, 528286 bytes, 0 underruns
+     0 output errors, 0 collisions, 1 interface resets
+     574 unknown protocol drops
+     0 babbles, 0 late collision, 0 deferred
+     2 lost carrier, 0 no carrier, 0 pause output
+     0 output buffer failures, 0 output buffers swapped out
+GigabitEthernet0/0.2 is up, line protocol is up
+  Hardware is CN Gigabit Ethernet, address is 5057.a8bf.df08 (bia 5057.a8bf.df08)
+  Description: VLAN2_Wireless(GDL)
+  Internet address is 172.21.0.1/20
+  MTU 1500 bytes, BW 100000 Kbit/sec, DLY 100 usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation 802.1Q Virtual LAN, Vlan ID  2.
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Keepalive set (10 sec)
+  Last clearing of "show interface" counters never
+GigabitEthernet0/0.3 is up, line protocol is up
+  Hardware is CN Gigabit Ethernet, address is 5057.a8bf.df08 (bia 5057.a8bf.df08)
+  Description: VLAN3_Wireless_Invitados(GDL)
+  Internet address is 172.21.16.1/22
+  MTU 1500 bytes, BW 100000 Kbit/sec, DLY 100 usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation 802.1Q Virtual LAN, Vlan ID  3.
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Keepalive set (10 sec)
+  Last clearing of "show interface" counters never
+GigabitEthernet0/0.4 is up, line protocol is up
+  Hardware is CN Gigabit Ethernet, address is 5057.a8bf.df08 (bia 5057.a8bf.df08)
+  Description: VLAN4_IOT_Equipos_Administracion(GDL)
+  Internet address is 172.21.20.1/23
+  MTU 1500 bytes, BW 100000 Kbit/sec, DLY 100 usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation 802.1Q Virtual LAN, Vlan ID  4.
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Keepalive set (10 sec)
+  Last clearing of "show interface" counters never
+GigabitEthernet0/0.5 is up, line protocol is up
+  Hardware is CN Gigabit Ethernet, address is 5057.a8bf.df08 (bia 5057.a8bf.df08)
+  Description: VLAN5_Video_Vigilancia(GDL)
+  Internet address is 172.21.22.1/24
+  MTU 1500 bytes, BW 100000 Kbit/sec, DLY 100 usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation 802.1Q Virtual LAN, Vlan ID  5.
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Keepalive set (10 sec)
+  Last clearing of "show interface" counters never
+GigabitEthernet0/0.6 is up, line protocol is up
+  Hardware is CN Gigabit Ethernet, address is 5057.a8bf.df08 (bia 5057.a8bf.df08)
+  Description: VLAN6_Iptel(GDL)
+  Internet address is 172.21.23.1/25
+  MTU 1500 bytes, BW 100000 Kbit/sec, DLY 100 usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation 802.1Q Virtual LAN, Vlan ID  6.
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Keepalive set (10 sec)
+  Last clearing of "show interface" counters never
+GigabitEthernet0/0.20 is up, line protocol is up
+  Hardware is CN Gigabit Ethernet, address is 5057.a8bf.df08 (bia 5057.a8bf.df08)
+  Internet address is 172.21.62.254/24
+  MTU 1500 bytes, BW 100000 Kbit/sec, DLY 100 usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation 802.1Q Virtual LAN, Vlan ID  20.
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Keepalive set (10 sec)
+  Last clearing of "show interface" counters never
+GigabitEthernet0/1 is up, line protocol is up
+  Hardware is CN Gigabit Ethernet, address is 5057.a8bf.df09 (bia 5057.a8bf.df09)
+  Description: al ISP(GDL)
+  Internet address is 10.40.72.82/24
+  MTU 1500 bytes, BW 1000000 Kbit/sec, DLY 10 usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation ARPA, loopback not set
+  Keepalive set (10 sec)
+  Full Duplex, 1Gbps, media type is RJ45
+  output flow-control is unsupported, input flow-control is unsupported
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Last input 00:00:00, output 00:00:03, output hang never
+  Last clearing of "show interface" counters never
+  Input queue: 0/75/0/0 (size/max/drops/flushes); Total output drops: 0
+  Queueing strategy: fifo
+  Output queue: 0/40 (size/max)
+  5 minute input rate 2000 bits/sec, 4 packets/sec
+  5 minute output rate 0 bits/sec, 0 packets/sec
+     58929 packets input, 3580923 bytes, 0 no buffer
+     Received 58273 broadcasts (0 IP multicasts)
+     0 runts, 0 giants, 0 throttles
+     0 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored
+     0 watchdog, 0 multicast, 0 pause input
+     3002 packets output, 350918 bytes, 0 underruns
+     0 output errors, 0 collisions, 1 interface resets
+     0 unknown protocol drops
+     0 babbles, 0 late collision, 0 deferred
+     1 lost carrier, 0 no carrier, 0 pause output
+     0 output buffer failures, 0 output buffers swapped out
+Serial0/0/0 is up, line protocol is up
+  Hardware is WIC MBRD Serial
+  Description: R1(SERIAL_DERECHO_ARRIBA-WAN2)
+  Internet address is 192.168.0.5/30
+  MTU 1500 bytes, BW 1544 Kbit/sec, DLY 20000 usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation HDLC, loopback not set
+  Keepalive set (10 sec)
+  Last input 00:00:01, output 00:00:00, output hang never
+
+RT1-GDL#
+RT1-GDL#
+RT1-GDL#show ip nat translations
+Pro Inside global      Inside local       Outside local      Outside global
+udp 10.40.72.82:123    172.21.0.2:123     10.40.72.254:123   10.40.72.254:123
+RT1-GDL#
+RT1-GDL#
+RT1-GDL#
+RT1-GDL#
+RT1-GDL#show running-config
+Building configuration...
+
+
+Current configuration : 6067 bytes
+!
+! Last configuration change at 23:07:47 mex Sat May 23 2020
+version 15.1
+service timestamps debug datetime localtime
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname RT1-GDL
+!
+boot-start-marker
+boot-end-marker
+!
+!
+logging buffered 4096
+!
+no aaa new-model
+clock timezone mex -6 0
+clock summer-time mex recurring
+!
+no ipv6 cef
+ip source-route
+ip cef
+!
+!
+!
+ip dhcp excluded-address 172.21.0.1 172.21.0.10
+ip dhcp excluded-address 172.21.16.1 172.21.16.10
+ip dhcp excluded-address 172.21.20.1 172.21.20.10
+ip dhcp excluded-address 172.21.22.1 172.21.22.10
+ip dhcp excluded-address 172.21.23.1 172.21.23.10
+!
+ip dhcp pool VLAN2_Wireless_GDL
+ network 172.21.0.0 255.255.240.0
+ default-router 172.21.0.1
+ dns-server 8.8.8.8
+ lease 0 3
+!
+ip dhcp pool VLAN3_Wireless_Invitados_GDL
+ network 172.21.16.0 255.255.252.0
+ default-router 172.21.16.1
+ dns-server 8.8.8.8
+ lease 0 3
+!
+ip dhcp pool VLAN4_IOT_Equipos_Administracion_GDL
+ network 172.21.20.0 255.255.254.0
+ default-router 172.21.20.1
+ dns-server 8.8.8.8
+!
+ip dhcp pool VLAN5_Video_Vigilancia_GDL
+ network 172.21.22.0 255.255.255.0
+ default-router 172.21.22.1
+ dns-server 8.8.8.8
+!
+ip dhcp pool VLAN6_Iptel_GDL
+ network 172.21.23.0 255.255.255.128
+ default-router 172.21.23.1
+ dns-server 8.8.8.8
+!
+!
+no ip domain lookup
+ip domain name OficinasGDLRT1.com
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+crypto pki token default removal timeout 0
+!
+!
+voice-card 0
+!
+!
+!
+!
+!
+!
+!
+license udi pid CISCO2901/K9 sn FTX161385K3
+license boot module c2900 technology-package uck9
+!
+!
+object-group network VLANs-PERMIT
+ 172.21.0.0 255.255.240.0
+ 172.21.16.0 255.255.252.0
+ 172.21.0.0 255.255.192.0
+!
+username cisco privilege 15 secret 5 $1$E9xn$Fbgj2oU6A3iZJGbJXoUDg1
+username cisco1 secret 5 $1$kjjk$1QXpiAndvBr0/Wbvn1uB2.
+!
+redundancy
+!
+!
+ip ssh version 2
+!
+!
+!
+!
+interface Loopback0
+ description Loopback_GDL
+ ip address 172.21.63.250 255.255.255.255
+!
+interface Loopback1
+ ip address 172.21.63.251 255.255.255.255
+!
+interface Embedded-Service-Engine0/0
+ no ip address
+ shutdown
+!
+interface GigabitEthernet0/0
+ description TRUNK(RT1GDL)
+ no ip address
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/0.2
+ description VLAN2_Wireless(GDL)
+ encapsulation dot1Q 2
+ ip address 172.21.0.1 255.255.240.0
+ ip helper-address 10.40.72.60
+ ip nat inside
+ ip virtual-reassembly in
+!
+interface GigabitEthernet0/0.3
+ description VLAN3_Wireless_Invitados(GDL)
+ encapsulation dot1Q 3
+ ip address 172.21.16.1 255.255.252.0
+ ip helper-address 10.40.72.60
+ ip nat inside
+ ip virtual-reassembly in
+!
+interface GigabitEthernet0/0.4
+ description VLAN4_IOT_Equipos_Administracion(GDL)
+ encapsulation dot1Q 4
+ ip address 172.21.20.1 255.255.254.0
+ ip helper-address 10.40.72.60
+!
+interface GigabitEthernet0/0.5
+ description VLAN5_Video_Vigilancia(GDL)
+ encapsulation dot1Q 5
+ ip address 172.21.22.1 255.255.255.0
+ ip helper-address 10.40.72.60
+!
+interface GigabitEthernet0/0.6
+ description VLAN6_Iptel(GDL)
+ encapsulation dot1Q 6
+ ip address 172.21.23.1 255.255.255.128
+ ip helper-address 10.40.72.60
+!
+interface GigabitEthernet0/0.20
+ encapsulation dot1Q 20
+ ip address 172.21.62.254 255.255.255.0
+!
+interface GigabitEthernet0/1
+ description al ISP(GDL)
+ ip address dhcp
+ ip access-group ACL_GDL out
+ ip nat outside
+ ip virtual-reassembly in
+ duplex auto
+ speed auto
+!
+interface Serial0/0/0
+ description R1(SERIAL_DERECHO_ARRIBA-WAN2)
+ ip address 192.168.0.5 255.255.255.252
+ clock rate 2000000
+!
+interface Serial0/0/1
+ description R1(SERIAL_IZQUIERDO_ARRIBA-WAN1)
+ ip address 192.168.0.1 255.255.255.252
+ clock rate 2000000
+!
+!
+router eigrp 1
+ network 172.21.0.0 0.0.63.255
+ network 192.168.0.0 0.0.0.3
+ network 192.168.0.4 0.0.0.3
+ passive-interface default
+ no passive-interface Serial0/0/0
+ no passive-interface Serial0/0/1
+!
+router ospf 1
+ passive-interface default
+ no passive-interface Serial0/0/0
+ no passive-interface Serial0/0/1
+ network 172.21.0.0 0.0.63.255 area 0
+ network 192.168.0.0 0.0.0.3 area 0
+ network 192.168.0.4 0.0.0.3 area 0
+!
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+!
+ip nat inside source list 1 interface GigabitEthernet0/1 overload
+ip route 0.0.0.0 0.0.0.0 GigabitEthernet0/1
+ip route 0.0.0.0 0.0.0.0 10.40.72.254 254
+ip route 0.0.0.0 0.0.0.0 10.40.72.254 254
+!
+ip access-list extended ACL_GDL
+ permit tcp object-group VLANs-PERMIT any eq www
+ permit tcp object-group VLANs-PERMIT any eq 22
+ permit tcp object-group VLANs-PERMIT any eq domain
+ permit tcp object-group VLANs-PERMIT any range ftp-data ftp
+ permit ip any any
+ deny   tcp object-group VLANs-PERMIT any eq www time-range 03:00-07:00
+ deny   tcp object-group VLANs-PERMIT any eq 8080 time-range 03:00-07:00
+ deny   tcp object-group VLANs-PERMIT any eq 52 time-range 03:00-07:00
+ deny   tcp object-group VLANs-PERMIT any range ftp-data ftp time-range 03:00-07:00
+!
+logging 10.40.72.60
+logging 10.40.72.64
+access-list 1 remark ACL para NAT
+access-list 1 remark Salida las VLANS
+access-list 1 permit 172.21.0.0 0.0.15.255
+access-list 1 permit 172.21.16.0 0.0.3.255
+access-list 2 permit 10.40.72.64
+access-list 2 remark ADMINES(OficinasGDL)
+access-list 2 permit 10.40.72.60
+access-list 2 deny   any log
+access-list 100 remark HORARIOS(OficinasGDL)
+access-list 100 deny   ip host 172.21.0.7 any time-range TIME-OficinasGDL
+access-list 100 deny   ip host 172.21.16.7 any time-range TIME-OficinasGDL
+access-list 100 deny   ip any any log
+!
+!
+!
+control-plane
+!
+!
+!
+!
+mgcp profile default
+!
+!
+!
+!
+!
+gatekeeper
+ shutdown
+!
+!
+banner motd ^C
+Acceso Restringido a Personal Autorizado_OficinasR1GDL
+^C
+!
+line con 0
+ exec-timeout 5 0
+line aux 0
+line 2
+ no activation-character
+ no exec
+ transport preferred none
+ transport input all
+ transport output pad telnet rlogin lapb-ta mop udptn v120 ssh
+ stopbits 1
+line vty 0 4
+ access-class 100 in
+ exec-timeout 5 0
+ login local
+ transport input all
+line vty 5 15
+ access-class 100 in
+ exec-timeout 5 0
+ login local
+ transport input all
+!
+scheduler allocate 20000 1000
+ntp server 10.40.72.254
+time-range TIME-OficinasGDL
+ periodic weekdays 2:00 to 5:00
+!
+end
+

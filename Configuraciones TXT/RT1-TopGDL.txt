@@ -1,0 +1,237 @@
+service password-encryption
+no ip domain-lookup
+hostname RT1-GDL
+
+username cisco privilege 15 secret cisco
+username cisco1 secret cisco1
+enable secret cisco
+
+banner motd ^
+Acceso Restringido a Personal Autorizado_OficinasR1GDL
+^
+
+ip domain-name OficinasGDLRT1.com
+crypto key generate rsa
+1024
+
+ip ssh version 2
+
+line con 0
+ exec-timeout 5 0
+ login local
+line vty 0 4
+ exec-timeout 5 0
+ login local
+ transport input all
+line vty 5 15
+ exec-timeout 5 0
+ login local
+ transport input all
+
+no enable secret
+line con 0
+no login local
+
+logging on
+logging buffered 4096
+logging 10.40.72.60
+logging 10.40.72.64
+
+!!pendiente 1
+access-list 2 remark ADMINES(OficinasGDL)
+access-list 2 permit 10.40.72.60
+access-list 2 permit 10.40.72.64
+access-list 2 deny any log
+
+access-list 100 remark HORARIOS(OficinasGDL)
+access-list 100 deny ip host 172.21.0.7 any time-range TIME-OficinasGDL
+access-list 100 deny ip host 172.21.16.7 any time-range TIME-OficinasGDL
+access-list 100 deny ip any any log
+
+!!aplicar horarios
+time-range TIME-OficinasGDL
+periodic weekdays 02:00 to 05:00
+
+!! despues se aplica
+line vty 0 15
+access-class 2 in
+access-class 100 in
+
+!pendiente2
+!!listas de acceso nombradas u grupos de redes en objeto
+object-group network VLANs-PERMIT
+host 10.40.72.60
+host 10.40.72.64
+172.21.0.0 /20
+172.21.0.0 /18
+172.21.16.0 /22
+
+!!listas de acceso extendidas con permit o deny puertos
+ip access-list extended ACL_GDL
+permit tcp object-group VLANs-PERMIT any eq 80
+permit tcp object-group VLANs-PERMIT any eq 22
+permit tcp object-group VLANs-PERMIT any eq 53
+permit tcp object-group VLANs-PERMIT any range 20 21
+!deny ip any object-group VLANs-PERMIT log
+permit ip any any log
+
+
+interface GigabitEthernet0/1
+ip access-group ACL_GDL out
+
+!!zona horaria mexico
+service timestamps debug datetime localtime
+service timestamps log datetime localtime
+clock timezone mex -6 0
+clock summer-time mex recurring
+
+!!sincronizar reloj ISP
+ntp server 10.40.72.254
+
+!!--------PARTE 2 -----------------
+
+interface GigabitEthernet0/0.2
+encapsulation dot1q 2
+ip address 172.21.0.1 255.255.240.0
+description VLAN2_Wireless(GDL)
+ip nat inside
+ip helper-address 10.40.72.60
+ip virtual-reassembly in
+
+interface GigabitEthernet0/0.3
+encapsulation dot1q 3
+ip address 172.21.16.1 255.255.252.0
+description VLAN3_Wireless_Invitados(GDL)
+ip nat inside
+ip helper-address 10.40.72.60
+ip virtual-reassembly in
+
+interface GigabitEthernet0/0.4
+encapsulation dot1q 4
+ip address 172.21.20.1 255.255.254.0
+ip helper-address 10.40.72.60
+description VLAN4_IOT_Equipos_Administracion(GDL)
+
+interface GigabitEthernet0/0.5
+encapsulation dot1q 5
+ip address 172.21.22.1 255.255.255.0
+ip helper-address 10.40.72.60
+description VLAN5_Video_Vigilancia(GDL)
+
+interface GigabitEthernet0/0.6
+encapsulation dot1q 6
+ip address 172.21.23.1 255.255.255.128
+ip helper-address 10.40.72.60
+description VLAN6_Iptel(GDL)
+--------------------DHCP----------------------------
+
+!!DHCP VLAN2(GDL)
+ip dhcp excluded-address 172.21.0.1 172.21.0.10
+
+ip dhcp pool VLAN2_Wireless_GDL
+ network 172.21.0.0 255.255.240.0
+ default-router 172.21.0.1
+ dns-server 8.8.8.8
+ lease 0 3 0
+
+!!DHCP VLAN3(GDL)
+ip dhcp excluded-address 172.21.16.1 172.21.16.10
+
+ip dhcp pool VLAN3_Wireless_Invitados_GDL
+ network 172.21.16.0 255.255.252.0
+ default-router 172.21.16.1
+ dns-server 8.8.8.8
+ lease 0 3 0
+
+!!DHCP VLAN4
+ip dhcp excluded-address 172.21.20.1 172.21.20.10
+
+ip dhcp pool VLAN4_IOT_Equipos_Administracion_GDL
+ network 172.21.20.0 255.255.254.0
+ default-router 172.21.20.1
+ dns-server 8.8.8.8
+ lease 1 0 0
+
+!!DHCP VLAN5
+ip dhcp excluded-address 172.21.22.1 172.21.22.10
+
+ip dhcp pool VLAN5_Video_Vigilancia_GDL
+ network 172.21.22.0 255.255.255.0
+ default-router 172.21.22.1
+ dns-server 8.8.8.8
+
+!!DHCP VLAN6
+ip dhcp excluded-address 172.21.23.1 172.21.23.10
+
+ip dhcp pool VLAN6_Iptel_GDL
+ network 172.21.23.0 255.255.255.128
+ default-router 172.21.23.1
+ dns-server 8.8.8.8
+
+
+!!--------PARTE 3 -----------------
+
+!INTERNO G0/0 A F0/1(SWITCH DE GDL)
+interface GigabitEthernet0/0
+description TRUNK(RT1GDL)
+no ip address
+no shu
+
+!EXTERNO G0/1 A DHCP(ISP DE GDL)
+interface GigabitEthernet0/1
+ description al ISP(GDL)
+ ip address dhcp
+ ip nat outside
+ ip virtual-reassembly in
+ no shu
+
+
+!!Oficinas_GDL
+interface serial 0/0/1
+description R1(SERIAL_IZQUIERDO_ARRIBA-WAN1)
+ip address 192.168.0.1 255.255.255.252
+no shutdown
+
+interface serial 0/0/0
+description R1(SERIAL_DERECHO_ARRIBA-WAN2)
+ip address 192.168.0.5 255.255.255.252
+no shutdown
+
+
+
+!!LISTAS ACL A NAT
+access-list 1 remark ACL para NAT
+access-list 1 remark Salida las VLANS
+access-list 1 permit 172.21.0.0 0.0.15.255
+access-list 1 permit 172.21.16.0 0.0.3.255
+!!NAT
+ip nat inside source list 1 interface GigabitEthernet0/1 overload
+ip classless
+
+ip route 172.21.64.0 	 255.255.192.0 serial 0/0/0
+ip route 172.21.64.0  	255.255.192.0 serial 0/0/1
+
+
+ip route 0.0.0.0 0.0.0.0 10.40.72.254 254
+ip route 0.0.0.0 0.0.0.0 GigabitEthernet0/1
+
+-------------------------
+!pendiente 3
+!!Ruteo dinamico
+router eigrp 1
+passive-interface default
+no passive-interface GigabitEthernet0/0
+network 192.168.0.0
+network 172.21.0.0 0.0.63.255
+no auto-summary
+
+-----
+!pendiente 4
+ !!loopback(GDL)
+ interface loopback 0
+ description Loopback_GDL
+ ip address 172.21.63.250 255.255.255.255
+
+!helper pendiente 5
+
+!deny ip any object-group VLANs-PERMIT log

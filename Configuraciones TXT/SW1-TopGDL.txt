@@ -1,0 +1,131 @@
+service password-encryption
+no ip domain-lookup
+hostname SW1-GDL_Top
+
+username cisco privilege 15 secret cisco
+username cisco1 secret cisco1
+enable secret cisco
+
+banner motd ^
+Acceso Restringido a Personal Autorizado_Oficinas_GDL
+^
+
+ip domain-name OficinasGDLSW1.com
+crypto key generate rsa
+1024
+
+ip ssh version 2
+
+
+line con 0
+ exec-timeout 5 0
+ login local
+line vty 0 4
+ exec-timeout 5 0
+ login local
+ transport input all
+line vty 5 15
+ exec-timeout 5 0
+ login local
+ transport input all
+
+no enable secret
+line con 0
+no login local
+
+logging on
+logging buffered 4096
+logging 10.40.72.60
+logging 10.40.72.64
+!!pendiente 1
+access-list 2 permit 10.40.72.64
+access-list 2 permit 10.40.72.60
+access-list 2 permit 172.21.0.7
+access-list 2 remark ADMINES(Oficinas_GDL)
+access-list 2 permit 172.21.16.7
+access-list 2 deny   any log
+
+access-list 100 remark Empleados(Oficinas_GDL)
+access-list 100 permit ip host 172.21.0.7 any time-range TIME-OFICINAS_GDL
+access-list 100 permit ip host 172.21.16.7 any time-range TIME-OFICINAS_GDL
+access-list 100 deny   ip any any log
+
+!!aplicar horarios
+time-range TIME-OFICINAS_GDL
+periodic weekdays 07:00 to 23:00
+
+!!pendiente2
+!!! despues se aplica
+line vty 0 15
+access-class 2 in
+access-class 100 in
+
+!!zona horaria mexico
+service timestamps debug datetime localtime
+service timestamps log datetime localtime
+clock timezone mex -6 0
+clock summer-time mex recurring
+
+!!sincronizar reloj ISP
+ntp server 10.40.72.254
+
+!!!!--------PARTE 2 -----------------
+!conf L2 en un swicth para vlans
+vlan 2
+name VLAN2_Wireless(GDL)
+vlan 3
+name VLAN3_Wireless_Invitados(GDL)
+vlan 4
+name VLAN4_IOT_Equipos_Administracion(GDL)
+vlan 5
+name VLAN5_Video_Vigilancia(GDL)
+vlan 6
+name VLAN6_Iptel(GDL)
+
+!en este caso el puerto 1 es el que va router con trunk
+interface FastEthernet0/1
+ description Pto trunk al router(GDL)
+ switchport mode trunk
+ no shu
+
+interface FastEthernet0/2
+ description Wireless_GDL(GDL)
+ switchport access vlan 2
+ switchport mode access
+ bandwidth 10000
+
+interface FastEthernet0/3
+ description Wireless_Invitados_GDL(GDL)
+ switchport access vlan 3
+ switchport mode access
+ bandwidth  10000
+
+interface FastEthernet0/4
+ description IOT_y_Equipos_Admistracion_GDL(GDL)
+ switchport access vlan 4
+ switchport mode access
+
+interface FastEthernet0/5
+ description Video_vigilancia_GDL(GDL)
+ switchport access vlan 5
+ switchport mode access
+
+interface FastEthernet0/6
+ description Iptel(GDL)
+ switchport access vlan 6
+ switchport mode access
+
+!apagar la Vlan1
+interface Vlan1
+ shutdown
+ no ip add
+
+
+!ip con acceso a internet
+ip default-gateway 172.21.0.1
+
+!
+interface Vlan2
+ip address 172.21.0.2 255.255.240.0
+
+

@@ -1,0 +1,268 @@
+RT2-CDMX#show run
+Building configuration...
+
+
+Current configuration : 5764 bytes
+!
+! Last configuration change at 23:42:55 mex Sat May 23 2020
+version 15.1
+service timestamps debug datetime localtime
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname RT2-CDMX
+!
+boot-start-marker
+boot-end-marker
+!
+!
+logging buffered 4096
+!
+no aaa new-model
+clock timezone mex -6 0
+clock summer-time mex recurring
+!
+no ipv6 cef
+ip source-route
+ip cef
+!
+!
+!
+ip dhcp excluded-address 172.21.64.1 172.21.64.10
+ip dhcp excluded-address 172.21.80.1 172.21.80.10
+ip dhcp excluded-address 172.21.84.1 172.21.84.10
+ip dhcp excluded-address 172.21.86.1 172.21.86.10
+ip dhcp excluded-address 172.21.87.1 172.21.87.10
+!
+ip dhcp pool VLAN2_Wireless_CDMX
+ network 172.21.64.0 255.255.240.0
+ default-router 172.21.64.1
+ dns-server 8.8.8.8
+ lease 0 3
+!
+ip dhcp pool VLAN3_Wireless_Invitados_CDMX
+ network 172.21.80.0 255.255.252.0
+ default-router 172.21.80.1
+ dns-server 8.8.8.8
+ lease 0 3
+!
+ip dhcp pool VLAN4_IOT_Equipos_Administracion_CDMX
+ network 172.21.84.0 255.255.254.0
+ default-router 172.21.84.1
+ dns-server 8.8.8.8
+!
+ip dhcp pool VLAN5_Video_Vigilancia_CDMX
+ network 172.21.86.0 255.255.255.0
+ default-router 172.21.86.1
+ dns-server 8.8.8.8
+!
+ip dhcp pool VLAN6_Iptel_CDMX
+ network 172.21.87.0 255.255.255.128
+ default-router 172.21.87.1
+ dns-server 8.8.8.8
+!
+!
+no ip domain lookup
+ip domain name OficinasCDMXRT.com
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+crypto pki token default removal timeout 0
+!
+!
+voice-card 0
+!
+!
+!
+!
+!
+!
+!
+license udi pid CISCO2901/K9 sn FTX161687XR
+license boot module c2900 technology-package uck9
+hw-module pvdm 0/0
+!
+!
+!
+object-group network VLANs-PERMIT
+ 172.21.64.0 255.255.240.0
+ 172.21.80.0 255.255.252.0
+!
+username cisco privilege 15 secret 5 $1$n06V$J0bstEz2CjH2RBF.bk6MK/
+username cisco1 secret 5 $1$.QBB$yHekeCsytbnk3qOGioeEq/
+!
+redundancy
+!
+!
+ip ssh version 2
+!
+!
+!
+!
+interface Loopback0
+ description Loopback_CDMX
+ ip address 172.21.127.250 255.255.255.255
+!
+interface Embedded-Service-Engine0/0
+ no ip address
+ shutdown
+!
+interface GigabitEthernet0/0
+ description TRUNK(RT2CDMX)
+ no ip address
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/0.2
+ description VLAN2_Wireless(CDMX)
+ encapsulation dot1Q 2
+ ip address 172.21.64.1 255.255.240.0
+ ip access-group OFICINA_CDMX_ACL_OG in
+ ip helper-address 10.40.72.60
+ ip nat inside
+ ip virtual-reassembly in
+!
+interface GigabitEthernet0/0.3
+ description VLAN3_Wireless_Invitados(CDMX)
+ encapsulation dot1Q 3
+ ip address 172.21.80.1 255.255.252.0
+ ip helper-address 10.40.72.60
+ ip nat inside
+ ip virtual-reassembly in
+!
+interface GigabitEthernet0/0.4
+ description VLAN4_IOT_Equipos_Administracion(CDMX)
+ encapsulation dot1Q 4
+ ip address 172.21.84.1 255.255.254.0
+ ip helper-address 10.40.72.60
+!
+interface GigabitEthernet0/0.5
+ description VLAN5_Video_Vigilancia(CDMX)
+ encapsulation dot1Q 5
+ ip address 172.21.86.1 255.255.255.0
+ ip helper-address 10.40.72.60
+!
+interface GigabitEthernet0/0.6
+ description VLAN6_Iptel(CDMX)
+ encapsulation dot1Q 6
+ ip address 172.21.87.1 255.255.255.128
+ ip helper-address 10.40.72.60
+!
+interface GigabitEthernet0/1
+ description al ISP(CDMX)
+ ip address dhcp
+ ip access-group OFICINA_CDMX_ACL_OG out
+ ip nat outside
+ ip virtual-reassembly in
+ duplex auto
+ speed auto
+!
+interface Serial0/0/0
+ description R2(SERIAL_DERECHO_ABAJO-WAN2)
+ ip address 192.168.0.6 255.255.255.252
+!
+interface Serial0/0/1
+ description R2(SERIAL_IZQUIERDO_ABAJO-WAN1)
+ ip address 192.168.0.2 255.255.255.252
+!
+!
+router eigrp 1
+ network 172.21.64.0 0.0.63.255
+ network 192.168.0.0 0.0.0.3
+ network 192.168.0.4 0.0.0.3
+ passive-interface default
+ no passive-interface Serial0/0/0
+ no passive-interface Serial0/0/1
+!
+router ospf 1
+ passive-interface default
+ no passive-interface Serial0/0/0
+ no passive-interface Serial0/0/1
+ network 172.21.64.0 0.0.63.255 area 0
+ network 192.168.0.0 0.0.0.3 area 0
+ network 192.168.0.4 0.0.0.3 area 0
+!
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+!
+ip nat inside source list 1 interface GigabitEthernet0/1 overload
+ip route 0.0.0.0 0.0.0.0 GigabitEthernet0/1
+ip route 0.0.0.0 0.0.0.0 10.40.72.254 254
+!
+ip access-list extended OFICINA_CDMX_ACL_OG
+ permit tcp object-group VLANs-PERMIT any eq www
+ permit tcp object-group VLANs-PERMIT any eq 22
+ permit tcp object-group VLANs-PERMIT any eq domain
+ permit tcp object-group VLANs-PERMIT any range ftp-data ftp
+ deny   tcp object-group VLANs-PERMIT any eq 8080
+ permit ip any any
+ deny   tcp object-group VLANs-PERMIT any eq 22 time-range 03:00-07:00
+ deny   tcp object-group VLANs-PERMIT any eq 8080 time-range 03:00-07:00
+ deny   tcp object-group VLANs-PERMIT any eq 52 time-range 03:00-07:00
+ deny   tcp object-group VLANs-PERMIT any range ftp-data ftp time-range 03:00-07:00
+!
+logging 10.40.72.60
+logging 10.40.72.64
+access-list 1 remark ACL para NAT
+access-list 1 remark Salida las VLANS
+access-list 1 permit 172.21.64.0 0.0.15.255
+access-list 1 permit 172.21.80.0 0.0.3.255
+access-list 2 permit 10.40.72.64
+access-list 2 remark ADMINES(OficinasCDMX)
+access-list 2 permit 10.40.72.60
+access-list 2 deny   any log
+!
+!
+!
+control-plane
+!
+!
+!
+!
+mgcp profile default
+!
+!
+!
+!
+!
+gatekeeper
+ shutdown
+!
+!
+banner motd ^C
+Acceso Restringido a Personal Autorizado_OficinasR2MX
+^C
+!
+line con 0
+ exec-timeout 5 0
+line aux 0
+line 2
+ no activation-character
+ no exec
+ transport preferred none
+ transport input all
+ transport output pad telnet rlogin lapb-ta mop udptn v120 ssh
+ stopbits 1
+line vty 0 4
+ access-class 100 in
+ exec-timeout 5 0
+ login local
+ transport input all
+line vty 5 15
+ access-class 100 in
+ exec-timeout 5 0
+ login local
+ transport input all
+!
+exception data-corruption buffer truncate
+scheduler allocate 20000 1000
+ntp server 10.40.72.254
+time-range TIME-OficinasCDMX
+ periodic weekdays 2:00 to 5:00
+!
+end
